@@ -1,8 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Configuration ---
-    // !!! Using the Render URL from your logs !!!
-    const BACKEND_URL_STATUS = 'https://my-coldchain-backend.onrender.com/api/status';
-    const BACKEND_URL_ALERTS = 'https://my-coldchain-backend.onrender.com/api/alerts';
+    // !!! IMPORTANT: Replace YOUR_BACKEND_IP with the actual IP address or hostname
+    // Use the HTTPS URL provided by Render for your backend Web Service
+    const BACKEND_URL_STATUS = 'https://my-coldchain-backend.onrender.com/api/status'; // Example Render URL
+    const BACKEND_URL_ALERTS = 'https://my-coldchain-backend.onrender.com/api/alerts'; // Example Render URL
     // --- Other configurations ---
     const UPDATE_INTERVAL_MS = 10000; // Update status/KPIs every 10 seconds
     const ALERT_UPDATE_INTERVAL_MS = 60000; // Update alert log every 60 seconds
@@ -99,12 +100,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function initializeMap() {
          if (!mapContainer) { console.error("Map container 'map' not found."); return; }
-         if (typeof L === 'undefined') { console.error("Leaflet library (L) not found."); mapContainer.innerHTML = "Map library failed to load."; return; }
+         // Check if Leaflet library is loaded *before* using L.*
+         if (typeof L === 'undefined') {
+             console.error("Leaflet library (L) not found. Map cannot be initialized.");
+             mapContainer.innerHTML = "Map library failed to load."; return;
+         }
          try {
              map = L.map(mapContainer).setView(MAP_INITIAL_COORDS, MAP_INITIAL_ZOOM);
              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap' }).addTo(map);
              console.log("Leaflet map initialized.");
-         } catch (e) { console.error("Error initializing Leaflet map:", e); mapContainer.innerHTML = "Error loading map."; map = null; }
+         } catch (e) {
+             console.error("Error initializing Leaflet map:", e);
+             mapContainer.innerHTML = "Error loading map."; map = null;
+         }
     }
     // --- ---
 
@@ -140,23 +148,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateMapMarker(lat, lng) {
-         if (!map) return;
-         latValueText.textContent = (lat !== null && lat !== undefined) ? lat.toFixed(4) : '--';
-         lngValueText.textContent = (lng !== null && lng !== undefined) ? lng.toFixed(4) : '--';
-         if (lat === null || lng === null) {
+         if (!map) return; // Exit if map wasn't initialized
+         // Update text display first
+         latValueText.textContent = (lat !== null && lat !== undefined && !isNaN(lat)) ? lat.toFixed(4) : '--';
+         lngValueText.textContent = (lng !== null && lng !== undefined && !isNaN(lng)) ? lng.toFixed(4) : '--';
+
+         // Check for valid numeric coordinates before interacting with Leaflet marker/map
+         if (lat === null || lng === null || isNaN(lat) || isNaN(lng)) {
+            // If coords are invalid or null, maybe fade the marker slightly?
              if(marker) marker.setOpacity(0.5);
-             return;
+             console.log("Skipping map marker update due to invalid/null coordinates.");
+             return; // Don't proceed with Leaflet functions
          }
+
          const newLatLng = L.latLng(lat, lng);
-         if (!marker) {
-             marker = L.marker(newLatLng, { title: "Container" }).addTo(map);
-             marker.bindPopup(`<b>Container CON-101</b>`).openPopup();
-             map.setView(newLatLng, 15);
-         } else {
-             marker.setLatLng(newLatLng);
-             marker.setPopupContent(`<b>Container CON-101</b><br>Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`);
-             if (!map.getBounds().contains(newLatLng)) map.panTo(newLatLng);
-             marker.setOpacity(1.0);
+         if (!marker) { // Create marker if it doesn't exist
+            try {
+                 marker = L.marker(newLatLng, { title: "Container Location" }).addTo(map);
+                 marker.bindPopup(`<b>Container CON-101</b>`).openPopup();
+                 map.setView(newLatLng, 15); // Zoom and center on first valid coordinate
+                 console.log("Map marker created at:", newLatLng);
+             } catch (e) { console.error("Error creating map marker:", e); }
+         } else { // Update existing marker
+            try {
+                marker.setLatLng(newLatLng);
+                marker.setPopupContent(`<b>Container CON-101</b><br>Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`);
+                // Only pan if the marker is outside the current view bounds
+                if (!map.getBounds().contains(newLatLng)) map.panTo(newLatLng);
+                marker.setOpacity(1.0); // Ensure marker is fully visible
+                // console.log("Map marker updated to:", newLatLng); // Optional: reduce logging frequency
+            } catch (e) { console.error("Error updating map marker:", e); }
          }
     }
 
@@ -171,9 +192,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         alerts.forEach(alert => {
             const row = alertLogBody.insertRow();
+            // Check if timestamps exist before creating Date objects
             const startTime = alert.start_time ? new Date(alert.start_time).toLocaleString() : 'N/A';
             const endTime = alert.end_time ? new Date(alert.end_time).toLocaleString() : 'Ongoing';
-            const peakNadir = alert.peak_value !== null ? `${alert.peak_value.toFixed(1)} &deg;C` : '--';
+            const peakNadir = (alert.peak_value !== null && !isNaN(alert.peak_value)) ? `${parseFloat(alert.peak_value).toFixed(1)} &deg;C` : '--';
             const type = alert.type || 'N/A';
 
             // Apply different style for ongoing alerts
@@ -240,6 +262,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateLiveCharts(currentTimeLabel, data.temperature, data.predicted_rsl_days);
 
             // --- Update Map ---
+            // The function handles nulls internally now
             updateMapMarker(data.lat, data.lng);
 
 
