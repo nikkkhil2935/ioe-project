@@ -5,7 +5,7 @@ import json
 
 # --- Configuration ---
 # !!! IMPORTANT: Use the same IP address as your running Flask server
-BACKEND_DATA_URL = 'http://192.168.0.106:5000/api/data' # Or 'http://127.0.0.1:5000/api/data'
+BACKEND_DATA_URL = 'https://my-coldchain-backend.onrender.com/api/data' # Or 'http://127.0.0.1:5000/api/data'
 SEND_INTERVAL_SECONDS = 15 # Send data every 15 seconds
 # --- ---
 
