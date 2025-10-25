@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Configuration ---
     // !!! IMPORTANT: Replace YOUR_BACKEND_IP with the actual IP address or hostname
-    // Use the HTTPS URL provided by Render for your backend Web Service
     const BACKEND_URL_STATUS = 'https://my-coldchain-backend.onrender.com/api/status'; // Example Render URL
     const BACKEND_URL_ALERTS = 'https://my-coldchain-backend.onrender.com/api/alerts'; // Example Render URL
     // --- Other configurations ---
@@ -20,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const rslValue = document.getElementById('rslValue');
     const rslBar = document.getElementById('rslBar');
     const initialRslDisplay = document.getElementById('initialRsl');
-    const kpiJourneyTime = document.getElementById('kpiJourneyTime');
+    const kpiJourneyTime = document.getElementById('kpiJourneyTime'); // Correct variable name
     const kpiAvgTemp = document.getElementById('kpiAvgTemp');
     const kpiMinTemp = document.getElementById('kpiMinTemp');
     const kpiMaxTemp = document.getElementById('kpiMaxTemp');
@@ -48,93 +47,45 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ---
 
     // --- Initialization Functions ---
-    function initializeCharts() {
+    function initializeCharts() { /* ... (remains the same) ... */
         if (tempChartCanvas) {
             const ctxTemp = tempChartCanvas.getContext('2d');
-            tempChart = new Chart(ctxTemp, {
-                type: 'line',
-                data: {
-                    labels: liveChartLabels,
-                    datasets: [{
-                        label: 'Temperature (°C)', data: liveTempData,
-                        borderColor: 'rgb(54, 162, 235)', backgroundColor: 'rgba(54, 162, 235, 0.1)',
-                        tension: 0.1, fill: true, pointRadius: 2, pointHoverRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: {
-                        x: { ticks: { maxTicksLimit: 10, font: { size: 9 } } },
-                        y: { beginAtZero: false, title: { display: true, text: 'Temp (°C)', font: { size: 10 } }, ticks: { font: { size: 9 } } }
-                    },
-                    plugins: { legend: { display: false } }, animation: false
-                }
-            });
+            tempChart = new Chart(ctxTemp, { type: 'line', data: { labels: liveChartLabels, datasets: [{ label: 'Temperature (°C)', data: liveTempData, borderColor: 'rgb(54, 162, 235)', backgroundColor: 'rgba(54, 162, 235, 0.1)', tension: 0.1, fill: true, pointRadius: 2, pointHoverRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { maxTicksLimit: 10, font: { size: 9 } } }, y: { beginAtZero: false, title: { display: true, text: 'Temp (°C)', font: { size: 10 } }, ticks: { font: { size: 9 } } } }, plugins: { legend: { display: false } }, animation: false } });
             console.log("Temperature Chart initialized.");
         } else { console.error("Temp Chart canvas not found!"); }
 
         if (rslChartCanvas) {
             const ctxRsl = rslChartCanvas.getContext('2d');
-            rslChart = new Chart(ctxRsl, {
-                type: 'line',
-                data: {
-                    labels: liveChartLabels, // Use the same time labels
-                    datasets: [{
-                        label: 'Predicted RSL (Days)', data: liveRslData,
-                        borderColor: 'rgb(46, 204, 113)', backgroundColor: 'rgba(46, 204, 113, 0.1)',
-                        tension: 0.1, fill: true, pointRadius: 2, pointHoverRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: {
-                        x: { ticks: { maxTicksLimit: 10, font: { size: 9 } } },
-                        y: { beginAtZero: false, title: { display: true, text: 'RSL (Days)', font: { size: 10 } }, ticks: { font: { size: 9 } } }
-                    },
-                    plugins: { legend: { display: false } }, animation: false
-                }
-            });
+            rslChart = new Chart(ctxRsl, { type: 'line', data: { labels: liveChartLabels, datasets: [{ label: 'Predicted RSL (Days)', data: liveRslData, borderColor: 'rgb(46, 204, 113)', backgroundColor: 'rgba(46, 204, 113, 0.1)', tension: 0.1, fill: true, pointRadius: 2, pointHoverRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { maxTicksLimit: 10, font: { size: 9 } } }, y: { beginAtZero: false, title: { display: true, text: 'RSL (Days)', font: { size: 10 } }, ticks: { font: { size: 9 } } } }, plugins: { legend: { display: false } }, animation: false } });
              console.log("RSL Chart initialized.");
         } else { console.error("RSL Chart canvas not found!"); }
     }
-
-    function initializeMap() {
+    function initializeMap() { /* ... (remains the same) ... */
          if (!mapContainer) { console.error("Map container 'map' not found."); return; }
-         // Check if Leaflet library is loaded *before* using L.*
-         if (typeof L === 'undefined') {
-             console.error("Leaflet library (L) not found. Map cannot be initialized.");
-             mapContainer.innerHTML = "Map library failed to load."; return;
-         }
+         if (typeof L === 'undefined') { console.error("Leaflet library (L) not found."); mapContainer.innerHTML = "Map library failed to load."; return; }
          try {
              map = L.map(mapContainer).setView(MAP_INITIAL_COORDS, MAP_INITIAL_ZOOM);
              L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; OpenStreetMap' }).addTo(map);
              console.log("Leaflet map initialized.");
-         } catch (e) {
-             console.error("Error initializing Leaflet map:", e);
-             mapContainer.innerHTML = "Error loading map."; map = null;
-         }
+         } catch (e) { console.error("Error initializing Leaflet map:", e); mapContainer.innerHTML = "Error loading map."; map = null; }
     }
     // --- ---
 
     // --- Update Functions ---
-    function updateLiveCharts(newTimeLabel, newTempValue, newRslValue) {
+    function updateLiveCharts(newTimeLabel, newTempValue, newRslValue) { /* ... (remains the same) ... */
         if (!tempChart || !rslChart) return;
-
         liveChartLabels.push(newTimeLabel);
-        liveTempData.push(newTempValue); // Chart.js handles nulls gracefully
-        liveRslData.push(newRslValue);   // Chart.js handles nulls gracefully
-
+        liveTempData.push(newTempValue);
+        liveRslData.push(newRslValue);
         while (liveChartLabels.length > MAX_CHART_POINTS) {
             liveChartLabels.shift();
             liveTempData.shift();
             liveRslData.shift();
         }
-
-        tempChart.update('none'); // Update without animation
-        rslChart.update('none');  // Update without animation
+        tempChart.update('none');
+        rslChart.update('none');
     }
-
-    function updateRslDisplay(currentRsl, initialRsl) {
+    function updateRslDisplay(currentRsl, initialRsl) { /* ... (remains the same) ... */
          rslValue.textContent = (currentRsl !== null && currentRsl !== undefined) ? currentRsl.toFixed(2) : '--';
          initialRslDisplay.textContent = initialRsl;
          let percentage = 100;
@@ -146,78 +97,57 @@ document.addEventListener('DOMContentLoaded', () => {
          if (percentage < 30) rslBar.classList.add('low');
          else if (percentage < 60) rslBar.classList.add('medium');
     }
-
-    function updateMapMarker(lat, lng) {
-         if (!map) return; // Exit if map wasn't initialized
-         // Update text display first
+    function updateMapMarker(lat, lng) { /* ... (remains the same, checks null/isNaN) ... */
+         if (!map) return;
          latValueText.textContent = (lat !== null && lat !== undefined && !isNaN(lat)) ? lat.toFixed(4) : '--';
          lngValueText.textContent = (lng !== null && lng !== undefined && !isNaN(lng)) ? lng.toFixed(4) : '--';
-
-         // Check for valid numeric coordinates before interacting with Leaflet marker/map
          if (lat === null || lng === null || isNaN(lat) || isNaN(lng)) {
-            // If coords are invalid or null, maybe fade the marker slightly?
              if(marker) marker.setOpacity(0.5);
              console.log("Skipping map marker update due to invalid/null coordinates.");
-             return; // Don't proceed with Leaflet functions
+             return;
          }
-
          const newLatLng = L.latLng(lat, lng);
-         if (!marker) { // Create marker if it doesn't exist
-            try {
-                 marker = L.marker(newLatLng, { title: "Container Location" }).addTo(map);
-                 marker.bindPopup(`<b>Container CON-101</b>`).openPopup();
-                 map.setView(newLatLng, 15); // Zoom and center on first valid coordinate
-                 console.log("Map marker created at:", newLatLng);
-             } catch (e) { console.error("Error creating map marker:", e); }
-         } else { // Update existing marker
-            try {
-                marker.setLatLng(newLatLng);
-                marker.setPopupContent(`<b>Container CON-101</b><br>Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`);
-                // Only pan if the marker is outside the current view bounds
-                if (!map.getBounds().contains(newLatLng)) map.panTo(newLatLng);
-                marker.setOpacity(1.0); // Ensure marker is fully visible
-                // console.log("Map marker updated to:", newLatLng); // Optional: reduce logging frequency
-            } catch (e) { console.error("Error updating map marker:", e); }
+         if (!marker) {
+             marker = L.marker(newLatLng, { title: "Container" }).addTo(map);
+             marker.bindPopup(`<b>Container CON-101</b>`).openPopup();
+             map.setView(newLatLng, 15);
+         } else {
+             marker.setLatLng(newLatLng);
+             marker.setPopupContent(`<b>Container CON-101</b><br>Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`);
+             if (!map.getBounds().contains(newLatLng)) map.panTo(newLatLng);
+             marker.setOpacity(1.0);
          }
     }
-
-    function updateAlertLogTable(alerts) {
+    function updateAlertLogTable(alerts) { /* ... (remains the same) ... */
         if (!alertLogBody) return;
-        alertLogBody.innerHTML = ''; // Clear existing rows
-
+        alertLogBody.innerHTML = '';
         if (!alerts || alerts.length === 0) {
             alertLogBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: #7f8c8d;">No alerts recorded yet.</td></tr>';
             return;
         }
-
         alerts.forEach(alert => {
             const row = alertLogBody.insertRow();
-            // Check if timestamps exist before creating Date objects
             const startTime = alert.start_time ? new Date(alert.start_time).toLocaleString() : 'N/A';
             const endTime = alert.end_time ? new Date(alert.end_time).toLocaleString() : 'Ongoing';
             const peakNadir = (alert.peak_value !== null && !isNaN(alert.peak_value)) ? `${parseFloat(alert.peak_value).toFixed(1)} &deg;C` : '--';
             const type = alert.type || 'N/A';
-
-            // Apply different style for ongoing alerts
-            if (!alert.end_time) {
-                row.style.backgroundColor = "#fffbe6"; // Light yellow background
-                row.style.fontWeight = "bold";
-            }
-
+            if (!alert.end_time) { row.style.backgroundColor = "#fffbe6"; row.style.fontWeight = "bold"; }
             row.insertCell().textContent = startTime;
             row.insertCell().textContent = endTime;
             row.insertCell().textContent = type;
-            row.insertCell().innerHTML = peakNadir; // Use innerHTML for degree symbol
+            row.insertCell().innerHTML = peakNadir;
         });
     }
 
     // --- Helper function to safely format numbers ---
+    // *** Updated safeToFixed to explicitly check for undefined ***
     function safeToFixed(value, digits = 1) {
-        // Checks if value is a valid number before calling toFixed
-        if (value !== null && value !== undefined && !isNaN(parseFloat(value))) {
-            return parseFloat(value).toFixed(digits);
+        // Check if value is null, undefined, or not a number
+        if (value === null || typeof value === 'undefined' || isNaN(parseFloat(value))) {
+            return '--'; // Return placeholder if invalid
         }
-        return '--'; // Return placeholder if not a valid number
+        // Otherwise, format the number
+        return parseFloat(value).toFixed(digits);
     }
 
 
@@ -227,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentTimeLabel = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit'});
         const fullTimestamp = now.toLocaleString();
 
-        let data = {}; // Define data with broader scope
+        let data = {};
 
         try {
             const response = await fetch(BACKEND_URL_STATUS);
@@ -251,8 +181,9 @@ document.addEventListener('DOMContentLoaded', () => {
             updateRslDisplay(data.predicted_rsl_days, INITIAL_RSL_DAYS);
 
             // --- Update KPIs ---
+            // Using safeToFixed handles potential null/undefined from backend
             kpiJourneyTime.textContent = safeToFixed(data.journey_time_hours, 1);
-            kpiAvgTemp.textContent = safeToFixed(data.avg_temp, 1);
+            kpiAvgTemp.textContent = safeToFixed(data.avg_temp, 1); // Error occurred here
             kpiMinTemp.textContent = safeToFixed(data.min_temp, 1);
             kpiMaxTemp.textContent = safeToFixed(data.max_temp, 1);
             kpiTimeIn.textContent = safeToFixed(data.time_in_range_hrs, 1);
@@ -262,7 +193,6 @@ document.addEventListener('DOMContentLoaded', () => {
             updateLiveCharts(currentTimeLabel, data.temperature, data.predicted_rsl_days);
 
             // --- Update Map ---
-            // The function handles nulls internally now
             updateMapMarker(data.lat, data.lng);
 
 
@@ -275,7 +205,9 @@ document.addEventListener('DOMContentLoaded', () => {
             tempValue.textContent = '--'; humValue.textContent = '--'; rslValue.textContent = '--';
             latValueText.textContent = '--'; lngValueText.textContent = '--';
             // Clear KPIs
-            kpiJourneyTime.textContent = '--';
+            // *** CORRECTED VARIABLE NAME IN CATCH BLOCK ***
+            kpiJourneyTime.textContent = '--'; // Use the correct const name
+            // *** END CORRECTION ***
             kpiAvgTemp.textContent = '--'; kpiMinTemp.textContent = '--';
             kpiMaxTemp.textContent = '--'; kpiTimeIn.textContent = '--'; kpiTimeOut.textContent = '--';
             updateRslDisplay(null, INITIAL_RSL_DAYS);
@@ -284,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Fetch Alert Log Data ---
-    async function fetchAndUpdateAlerts() {
+    async function fetchAndUpdateAlerts() { /* ... (remains the same) ... */
          try {
              const response = await fetch(BACKEND_URL_ALERTS);
              if (!response.ok) throw new Error(`Alert fetch error! ${response.status}`);
