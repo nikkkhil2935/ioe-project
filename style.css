@@ -185,6 +185,7 @@ header p span {
 }
 .coords-display {
     text-align: center;
+    margin-top: 10px;
 }
 
 /* Alert Log Table */
