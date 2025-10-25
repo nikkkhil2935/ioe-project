@@ -1,8 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Configuration ---
     // !!! IMPORTANT: Replace YOUR_BACKEND_IP with the actual IP address or hostname
-    const BACKEND_URL_STATUS = 'http://192.168.0.106:5000/api/status';
-const BACKEND_URL_ALERTS = 'http://192.168.0.106:5000/api/alerts';
+// Example: Replace 'my-coldchain-backend' with the name you chose
+const BACKEND_URL_STATUS = 'https://my-coldchain-backend.onrender.com/api/status';
+const BACKEND_URL_ALERTS = 'https://my-coldchain-backend.onrender.com/api/alerts';
     // No need to fetch history separately if using live chart updates
     const UPDATE_INTERVAL_MS = 10000; // Update status/KPIs every 10 seconds
     const ALERT_UPDATE_INTERVAL_MS = 60000; // Update alert log every 60 seconds
