@@ -5,14 +5,15 @@ import json
 
 # --- Configuration ---
 # !!! IMPORTANT: Choose your backend URL
-# For Render deployment (recommended):
-BACKEND_DATA_URL = 'https://my-coldchain-backend.onrender.com/api/data'
-# For local testing, use: 'http://127.0.0.1:5000/api/data'
+# For local testing (recommended for development):
+BACKEND_DATA_URL = 'http://127.0.0.1:5000/api/data'
+# For Render deployment, use: 'https://my-coldchain-backend.onrender.com/api/data'
 SEND_INTERVAL_SECONDS = 3 # Send data every 3 seconds for testing
 # --- ---
 
 # --- Simulation Parameters ---
-current_temp = 5.0 # Starting temp (cold chain temperature)
+# Cold chain optimal range: 5-15°C (realistic for vaccines/pharmaceuticals)
+current_temp = 8.0 # Starting temp (optimal cold chain temperature)
 current_lat = 27.7172 # Kathmandu coordinates
 current_lng = 85.3240
 # --- ---
@@ -24,17 +25,30 @@ print("Press CTRL+C to stop.")
 
 while True:
     try:
-        # Simulate small changes
-        current_temp += random.uniform(-1.0, 1.0)
-        # Simulate occasional bigger jump (e.g., alert condition)
-        if random.random() < 0.1: # 10% chance
-             temp_jump = random.uniform(5, 10) * random.choice([-1, 1])
+        # Simulate small changes (±0.5°C typical variation)
+        current_temp += random.uniform(-0.5, 0.5)
+        
+        # Simulate occasional temperature excursion (10% chance)
+        if random.random() < 0.1:
+             # Cold chain breach: temperature goes up
+             temp_jump = random.uniform(2, 5)
              current_temp += temp_jump
-             print(f"*** Simulating temperature jump: {temp_jump:.1f} ***")
+             print(f"*** ⚠️ Temperature excursion: +{temp_jump:.1f}°C ***")
+        
+        # Simulate recovery (5% chance to drop back down)
+        if current_temp > 12.0 and random.random() < 0.05:
+             temp_drop = random.uniform(2, 4)
+             current_temp -= temp_drop
+             print(f"*** ✅ Temperature recovering: -{temp_drop:.1f}°C ***")
 
-        # Keep values within reasonable bounds
-        current_temp = max(10.0, min(35.0, current_temp)) # Limit between 10C and 35C for testing
+        # Keep values within cold chain realistic bounds (5-15°C)
+        # Normal operation: 5-10°C, Alert zone: 10-15°C, Critical: >15°C
+        current_temp = max(5.0, min(18.0, current_temp))
+        
+        # Humidity: typical cold chain range 50-85%
         current_hum = random.uniform(50.0, 85.0)
+        
+        # GPS: slight movement simulation
         current_lat += random.uniform(-0.001, 0.001)
         current_lng += random.uniform(-0.001, 0.001)
 

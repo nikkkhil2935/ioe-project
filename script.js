@@ -458,8 +458,9 @@ class ColdChainApp {
     calculateCompliance() {
         if (this.data.history.length === 0) return '--';
         
+        // Cold chain acceptable range: 3°C to 15°C
         const inRangeCount = this.data.history.filter(reading => 
-            reading.temperature >= 15 && reading.temperature <= 25
+            reading.temperature >= 3 && reading.temperature <= 15
         ).length;
         
         return Math.round((inRangeCount / this.data.history.length) * 100);

@@ -9,17 +9,19 @@ import pandas as pd
 import numpy as np
 import os
 import traceback
-from datetime import datetime # For alert timestamps
+from datetime import datetime
+import pytz  # For timezone handling
 
 # --- Configuration Constants ---
-PRODUCT_OPTIMAL_TEMP = 4.0
+PRODUCT_OPTIMAL_TEMP = 8.0  # Optimal cold chain temperature (8°C)
 PRODUCT_Q10 = 2.0
 SENSOR_INTERVAL_HOURS = 1 # **Important: Assumed interval for calculations**
-CRITICAL_TEMP = 8.0
-ALERT_TEMP_HIGH = 25.0
-ALERT_TEMP_LOW = 15.0
+CRITICAL_TEMP = 12.0  # Anything above 12°C is critical for cold chain
+ALERT_TEMP_HIGH = 15.0  # High temperature alert (was 25°C)
+ALERT_TEMP_LOW = 3.0  # Low temperature alert (was 15°C, now for freezing risk)
 WINDOW_SIZE_HOURS = 6
 HISTORY_MAX_LEN = 200 # ** Increased history size for demo **
+TIMEZONE = 'Asia/Kathmandu'  # Nepal timezone (UTC+5:45)
 # --- ---
 
 # --- Load Model ---
@@ -58,7 +60,9 @@ def receive_data():
         hum = data.get('hum')
         lat = data.get('lat', latest_data.get('lat'))
         lng = data.get('lng', latest_data.get('lng'))
-        timestamp_iso = datetime.now().isoformat() # Record arrival time
+        # Get current time in local timezone
+        local_tz = pytz.timezone(TIMEZONE)
+        timestamp_iso = datetime.now(local_tz).isoformat() # Record arrival time in local timezone
 
         if temp is None or not isinstance(temp, (int, float)): return jsonify({"error": "Invalid 'temp'"}), 400
         if hum is None or not isinstance(hum, (int, float)): return jsonify({"error": "Invalid 'hum'"}), 400
@@ -76,25 +80,59 @@ def receive_data():
         # 3. --- Predict RSL (if possible) ---
         predicted_rsl_py = None
         hist_df = pd.DataFrame(history) # Create DataFrame *after* appending new reading
-        if model is not None and not hist_df.empty:
-            # Calculate features (ensure logic matches training!)
-            current_features = {
-                'temperature': temp_py, 'humidity': hum_py,
-                'avg_temp_last_6h': float(hist_df['temperature'].rolling(WINDOW_SIZE_HOURS, min_periods=1).mean().iloc[-1]),
-                'max_temp_last_6h': float(hist_df['temperature'].rolling(WINDOW_SIZE_HOURS, min_periods=1).max().iloc[-1]),
-                'min_temp_last_6h': float(hist_df['temperature'].rolling(WINDOW_SIZE_HOURS, min_periods=1).min().iloc[-1]),
-                'time_above_critical': float((hist_df['temperature'] > CRITICAL_TEMP).sum() * SENSOR_INTERVAL_HOURS),
-                'journey_time_hours': float(current_hours)
-            }
-            feature_order = ['temperature', 'humidity', 'avg_temp_last_6h', 'max_temp_last_6h',
-                             'min_temp_last_6h', 'time_above_critical', 'journey_time_hours']
+        
+        # Calculate RSL based on Q10 degradation model for cold chain (5-15°C range)
+        if not hist_df.empty:
             try:
-                feature_values = pd.DataFrame([current_features], columns=feature_order)
-                predicted_rsl_np = model.predict(feature_values)[0]
-                predicted_rsl_py = float(max(0, predicted_rsl_np))
-                # Update RSL in the *last* history entry (the one we just added)
-                history[-1]['rsl'] = round(predicted_rsl_py, 2) if predicted_rsl_py is not None else None
-            except Exception as pred_e: print(f"❌ Prediction Error: {pred_e}"); traceback.print_exc()
+                # Use Q10 degradation model: For every 10°C above optimal, shelf life halves
+                temp_diff = temp_py - PRODUCT_OPTIMAL_TEMP
+                degradation_factor = PRODUCT_Q10 ** (temp_diff / 10.0)
+                
+                # Base shelf life at optimal temperature
+                base_shelf_life = 20.0  # days
+                
+                # Calculate remaining shelf life
+                predicted_rsl_py = base_shelf_life / degradation_factor
+                
+                # Adjust based on time already spent at various temperatures
+                avg_temp = float(hist_df['temperature'].mean())
+                avg_temp_diff = avg_temp - PRODUCT_OPTIMAL_TEMP
+                avg_degradation = PRODUCT_Q10 ** (avg_temp_diff / 10.0)
+                time_elapsed_days = current_hours / 24.0
+                shelf_life_consumed = time_elapsed_days * avg_degradation
+                
+                # Final RSL = base - consumed
+                predicted_rsl_py = max(0.1, base_shelf_life - shelf_life_consumed)
+                
+                # Clamp to reasonable range (0.1 to 30 days)
+                predicted_rsl_py = float(max(0.1, min(30.0, predicted_rsl_py)))
+                
+                # Update RSL in the *last* history entry
+                history[-1]['rsl'] = round(predicted_rsl_py, 2)
+                
+            except Exception as pred_e: 
+                print(f"❌ Prediction Error: {pred_e}")
+                traceback.print_exc()
+                # Fallback to model prediction if Q10 fails
+                if model is not None:
+                    try:
+                        current_features = {
+                            'temperature': temp_py, 'humidity': hum_py,
+                            'avg_temp_last_6h': float(hist_df['temperature'].rolling(WINDOW_SIZE_HOURS, min_periods=1).mean().iloc[-1]),
+                            'max_temp_last_6h': float(hist_df['temperature'].rolling(WINDOW_SIZE_HOURS, min_periods=1).max().iloc[-1]),
+                            'min_temp_last_6h': float(hist_df['temperature'].rolling(WINDOW_SIZE_HOURS, min_periods=1).min().iloc[-1]),
+                            'time_above_critical': float((hist_df['temperature'] > CRITICAL_TEMP).sum() * SENSOR_INTERVAL_HOURS),
+                            'journey_time_hours': float(current_hours)
+                        }
+                        feature_order = ['temperature', 'humidity', 'avg_temp_last_6h', 'max_temp_last_6h',
+                                         'min_temp_last_6h', 'time_above_critical', 'journey_time_hours']
+                        feature_values = pd.DataFrame([current_features], columns=feature_order)
+                        predicted_rsl_np = model.predict(feature_values)[0]
+                        predicted_rsl_py = float(max(0.1, predicted_rsl_np))
+                        history[-1]['rsl'] = round(predicted_rsl_py, 2)
+                    except Exception as model_e:
+                        print(f"❌ Model Prediction also failed: {model_e}")
+                        predicted_rsl_py = 15.0  # Safe fallback
 
         # 4. --- Determine Status & Log Alerts ---
         current_status = "NORMAL"
@@ -142,6 +180,7 @@ def receive_data():
             kpis["avg_temp"] = round(float(hist_df['temperature'].mean()), 1)
             kpis["min_temp"] = round(float(hist_df['temperature'].min()), 1)
             kpis["max_temp"] = round(float(hist_df['temperature'].max()), 1)
+            # Updated range for cold chain: 3°C to 15°C is acceptable
             in_range_mask = (hist_df['temperature'] >= ALERT_TEMP_LOW) & (hist_df['temperature'] <= ALERT_TEMP_HIGH)
             kpis["time_in_range_hrs"] = round(float(in_range_mask.sum() * SENSOR_INTERVAL_HOURS), 1)
             kpis["time_out_range_hrs"] = round(float((~in_range_mask).sum() * SENSOR_INTERVAL_HOURS), 1)
