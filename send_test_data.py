@@ -4,15 +4,17 @@ import random
 import json
 
 # --- Configuration ---
-# !!! IMPORTANT: Use the same IP address as your running Flask server
-BACKEND_DATA_URL = 'https://my-coldchain-backend.onrender.com/api/data' # Or 'http://127.0.0.1:5000/api/data'
-SEND_INTERVAL_SECONDS = 15 # Send data every 15 seconds
+# !!! IMPORTANT: Choose your backend URL
+# For Render deployment (recommended):
+BACKEND_DATA_URL = 'https://my-coldchain-backend.onrender.com/api/data'
+# For local testing, use: 'http://127.0.0.1:5000/api/data'
+SEND_INTERVAL_SECONDS = 3 # Send data every 3 seconds for testing
 # --- ---
 
 # --- Simulation Parameters ---
-current_temp = 22.0 # Starting temp
-current_lat = 19.4284
-current_lng = 72.8221
+current_temp = 5.0 # Starting temp (cold chain temperature)
+current_lat = 27.7172 # Kathmandu coordinates
+current_lng = 85.3240
 # --- ---
 
 print(f"Starting automated data sender.")
